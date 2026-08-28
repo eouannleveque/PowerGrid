@@ -138,9 +138,11 @@
   "powergrid.tooltip.multimeter.mode": "Mode: ",
   "powergrid.tooltip.multimeter.mode.0": "Voltage",
   "powergrid.tooltip.multimeter.mode.1": "Wire Current",
+  "powergrid.tooltip.multimeter.mode.2": "Wire Resistance",
 
   "powergrid.tooltip.multimeter.voltage": "Voltage: ",
   "powergrid.tooltip.multimeter.current": "Current: ",
+  "powergrid.tooltip.multimeter.resistance": "Resistance: ",
 
   "powergrid.tooltip.crt.deflection": "Deflection voltage:",
   "powergrid.tooltip.crt.heater": "Heater voltage:",

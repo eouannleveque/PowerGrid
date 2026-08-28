@@ -119,7 +119,7 @@ public class MultimeterItemRenderer extends CustomRenderedItemModelRenderer {
                     renderProbe(neg.getExactPosition(world).subtract(origin), buffer, matrixStack, world, player, 0xFF202020);
                 }
             }
-            case 1 -> {
+            case 1, 2 -> {
                 if(data.contains("X")) {
                     var pos = new Vec3(data.getFloat("X"), data.getFloat("Y"), data.getFloat("Z"));
                     renderProbe(pos.subtract(origin), buffer, matrixStack, world, player, 0xFF202020);

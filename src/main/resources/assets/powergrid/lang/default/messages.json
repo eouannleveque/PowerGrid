@@ -24,6 +24,7 @@
   "powergrid.message.cut_reset": "Block wire cut discarded",
 
   "powergrid.message.multimeter_disconnected": "Multimeter disconnected",
+  "powergrid.message.multimeter_no_battery": "No Portable Battery power available",
 
   "powergrid.message.outdated_configs": "Power Grid has detected outdated server configuration files, consider resetting your configs if issues occur.",
   "powergrid.message.reset_configs": "[Reset now]",

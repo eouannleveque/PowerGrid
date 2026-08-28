@@ -45,8 +45,10 @@ import org.patryk3211.powergrid.electricity.GlobalElectricNetworks;
 import org.patryk3211.powergrid.electricity.base.IElectric;
 import org.patryk3211.powergrid.electricity.info.Current;
 import org.patryk3211.powergrid.electricity.info.IHaveElectricProperties;
+import org.patryk3211.powergrid.electricity.info.Resistance;
 import org.patryk3211.powergrid.electricity.info.Voltage;
 import org.patryk3211.powergrid.electricity.wire.*;
+import org.patryk3211.powergrid.equipment.portablebattery.BatteryUtils;
 import org.patryk3211.powergrid.network.packets.MultimeterDataC2SPacket;
 import org.patryk3211.powergrid.utility.Lang;
 import org.patryk3211.powergrid.utility.Unit;
@@ -58,12 +60,54 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
         super(properties.stacksTo(1));
     }
 
+    public static int energyPerUse() {
+        return ModdedConfigs.server().equipment.multimeterEnergyPerUse.get();
+    }
+
+    /**
+     * Checks whether the player has a Portable Battery worn with enough charge left,
+     * consuming the energy on the server. Sends a warning message and returns false otherwise.
+     */
+    private boolean hasBatteryPower(Level level, Player player) {
+        var battery = BatteryUtils.getBattery(player);
+        if(battery == null || BatteryUtils.tryDrawEnergy(battery, energyPerUse()) <= 0) {
+            if(!level.isClientSide) {
+                player.displayClientMessage(Lang.translate("message.multimeter_no_battery")
+                        .style(ChatFormatting.RED)
+                        .component(), true);
+            }
+            return false;
+        }
+        if(!level.isClientSide) {
+            BatteryUtils.drawEnergy(player, energyPerUse());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isBarVisible(ItemStack stack) {
+        return BatteryUtils.isBarVisible(stack, energyPerUse());
+    }
+
+    @Override
+    public int getBarWidth(ItemStack stack) {
+        return BatteryUtils.getBarWidth(stack, energyPerUse());
+    }
+
+    @Override
+    public int getBarColor(ItemStack stack) {
+        return BatteryUtils.getBarColor(stack, energyPerUse());
+    }
+
     @Override
     public InteractionResult useOn(UseOnContext context) {
         if(context.getPlayer() != null && context.getPlayer().isShiftKeyDown())
             return super.useOn(context);
         if(context.getHand() != InteractionHand.MAIN_HAND)
             return super.useOn(context);
+        var player = context.getPlayer();
+        if(player != null && !hasBatteryPower(context.getLevel(), player))
+            return InteractionResult.FAIL;
 
         var electric = IElectric.getAt(context.getLevel(), context.getClickedPos());
         var blockState = context.getLevel().getBlockState(context.getClickedPos());
@@ -107,9 +151,12 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
     public InteractionResult useOnWire(Player player, ItemStack stack, InteractionHand hand, BaseWireEntity wireEntity) {
         if(hand != InteractionHand.MAIN_HAND)
             return InteractionResult.PASS;
-        if(getMode(stack) != 1) {
-            // Enable current mode.
-            setMode(stack, 1);
+        if(!hasBatteryPower(player.level(), player))
+            return InteractionResult.FAIL;
+        // Sneak + click on a wire reads its resistance, a normal click reads current.
+        int targetMode = player.isShiftKeyDown() ? 2 : 1;
+        if(getMode(stack) != targetMode) {
+            setMode(stack, targetMode);
         }
         if(player.level().isClientSide) {
             var point = getAttachmentPoint();
@@ -152,7 +199,7 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
                     }
                 }
             }
-            case 1 -> {
+            case 1, 2 -> {
                 if(!level.isClientSide) {
                     if(data.contains("UUID")) {
                         var genericEntity = ((ServerLevel) level).getEntity(data.getUUID("UUID"));
@@ -285,6 +332,14 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
                 }
                 yield 0;
             }
+            case 2 -> {
+                var lineId = data.getInt("EID");
+                var entity = level.getEntity(lineId);
+                if(entity instanceof BaseWireEntity wire) {
+                    yield wire.getResistance();
+                }
+                yield 0;
+            }
             default -> 0;
         };
     }
@@ -318,6 +373,17 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
                         .style(ChatFormatting.GRAY)
                         .component();
             }
+            case 2 -> {
+                var resistance = Unit.RESISTANCE.formatWithPrefixes(measurement);
+                float maxOhm = ModdedConfigs.server().equipment.multimeterResistance.getF();
+                if(measurement > maxOhm) {
+                    resistance = Lang.text(">" + maxOhm + " ").add(Unit.RESISTANCE.get());
+                }
+                yield Lang.translate("tooltip.multimeter.resistance")
+                        .add(resistance.style(ChatFormatting.DARK_AQUA))
+                        .style(ChatFormatting.GRAY)
+                        .component();
+            }
             default -> null;
         };
     }
@@ -327,6 +393,7 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
         float value = Math.abs(switch(getMode(stack)) {
             case 0 -> measurement / ModdedConfigs.server().equipment.multimeterVoltage.getF();
             case 1 -> measurement / ModdedConfigs.server().equipment.multimeterCurrent.getF();
+            case 2 -> measurement / ModdedConfigs.server().equipment.multimeterResistance.getF();
             default -> 0;
         });
         if(value > 1)
@@ -338,5 +405,6 @@ public class MultimeterItem extends Item implements IHaveElectricProperties {
     public void appendProperties(ItemStack stack, Player player, List<Component> tooltip) {
         Voltage.max(ModdedConfigs.server().equipment.multimeterVoltage.getF(), player, tooltip);
         Current.max(ModdedConfigs.server().equipment.multimeterCurrent.getF(), player, tooltip);
+        Resistance.maximum(ModdedConfigs.server().equipment.multimeterResistance.getF(), player, tooltip);
     }
 }

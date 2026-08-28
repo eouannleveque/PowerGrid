@@ -20,6 +20,8 @@ public class CEquipment extends ConfigBase {
     public final ConfigFloat multimeterDistance = f(5, 1, "multimeterDistance", Comments.multimeterDistance);
     public final ConfigFloat multimeterVoltage = f(500, 1, "multimeterVoltage", Comments.multimeterVoltage);
     public final ConfigFloat multimeterCurrent = f(50, 1, "multimeterCurrent", Comments.multimeterCurrent);
+    public final ConfigFloat multimeterResistance = f(1000, 1, "multimeterResistance", Comments.multimeterResistance);
+    public final ConfigInt multimeterEnergyPerUse = i(5, 0, "multimeterEnergyPerUse", Comments.multimeterEnergyPerUse);
 
     @NotNull
     @Override
@@ -43,5 +45,7 @@ public class CEquipment extends ConfigBase {
         public static final String multimeterDistance = "Max multimeter distance";
         public static final String multimeterVoltage = "Max multimeter voltage";
         public static final String multimeterCurrent = "Max multimeter current";
+        public static final String multimeterResistance = "Max multimeter resistance";
+        public static final String multimeterEnergyPerUse = "Energy used by the Multimeter each time a probe is connected";
     }
 }
